@@ -5,6 +5,8 @@ import { CloudArrowDownIcon } from "@heroicons/react/24/solid";
 import { useEffect, useRef, useState } from "react";
 import Typewriter from "../components/Typewriter";
 
+export const experimental_ppr = true
+
 interface Window { // add webkitSpeechRecognition to window
   webkitSpeechRecognition: any;
 }

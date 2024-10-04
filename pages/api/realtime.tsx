@@ -84,4 +84,4 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 }
 
-export const dynamic = 'force-dynamic'
+export const experimental_ppr = true
