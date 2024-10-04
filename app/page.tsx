@@ -5,8 +5,6 @@ import { CloudArrowDownIcon } from "@heroicons/react/24/solid";
 import { useEffect, useRef, useState } from "react";
 import Typewriter from "../components/Typewriter";
 
-export const experimental_ppr = true
-
 interface Window { // add webkitSpeechRecognition to window
   webkitSpeechRecognition: any;
 }
@@ -70,65 +68,41 @@ export default function Home() {
       const reader = response.body?.getReader();
       let accumulatedText = '';
       let currentAudioChunks: string[] = [];
+      let buffer = '';
 
       while (true) {
         const { done, value } = await reader!.read();
         if (done) break;
 
         const chunk = new TextDecoder().decode(value);
-        const events = chunk.split('\n\n').filter(Boolean);
+        buffer += chunk;
+
+        const events = buffer.split('\n\n');
+        buffer = events.pop() || ''; // Keep the last incomplete event in the buffer
 
         for (const event of events) {
           if (event.startsWith('data: ')) {
-            const jsonData = event.slice(6);
-            const parsedEvent = JSON.parse(jsonData);
-            console.log("Received event:", parsedEvent);
+            try {
+              const jsonData = event.slice(6);
+              const parsedEvent = JSON.parse(jsonData);
+              console.log("Received event:", parsedEvent);
 
-            if (parsedEvent.type === 'response.audio_transcript.delta') {
-              try {
+              if (parsedEvent.type === 'response.audio_transcript.delta') {
                 accumulatedText += parsedEvent.delta;
-              } catch (error) {
-                console.error("Error processing audio transcript delta:", error);
-              }
-              try {
-                setMessages(prevMessages => {
-                  const lastMessage = prevMessages[prevMessages.length - 1];
-                  if (lastMessage && lastMessage.type === 'assistant') {
-                    const updatedMessages = [...prevMessages];
-                    updatedMessages[updatedMessages.length - 1] = { type: "assistant", value: accumulatedText };
-                    return updatedMessages;
-                  } else {
-                    return [...prevMessages, { type: "assistant", value: accumulatedText }];
-                  }
-                });
-                setLoading(false);
-              } catch (error) {
-                console.error("Error updating messages:", error);
-              }
-            } else if (parsedEvent.type === 'response.audio.delta') {
-              try {
+                updateMessages(accumulatedText);
+              } else if (parsedEvent.type === 'response.audio.delta') {
                 currentAudioChunks.push(parsedEvent.delta);
-              } catch (error) {
-                console.error("Error processing audio delta:", error);
-              }
-            } else if (parsedEvent.type === 'response.audio.done') {
-              if (currentAudioChunks.length > 0) {
-                const combinedBase64Audio = currentAudioChunks.join('');
-                setAudioQueue(prevQueue => [...prevQueue, combinedBase64Audio]);
-                currentAudioChunks = []; // Reset for next audio segment
-              }
-            } else if (parsedEvent.type === 'response.audio_transcript.done') {
-              setMessages(prevMessages => {
-                const lastMessage = prevMessages[prevMessages.length - 1];
-                if (lastMessage && lastMessage.type === 'assistant') {
-                  const updatedMessages = [...prevMessages];
-                  updatedMessages[updatedMessages.length - 1] = { type: "assistant", value: parsedEvent.transcript };
-                  return updatedMessages;
-                } else {
-                  return [...prevMessages, { type: "assistant", value: parsedEvent.transcript }];
+              } else if (parsedEvent.type === 'response.audio.done') {
+                if (currentAudioChunks.length > 0) {
+                  const combinedBase64Audio = currentAudioChunks.join('');
+                  setAudioQueue(prevQueue => [...prevQueue, combinedBase64Audio]);
+                  currentAudioChunks = []; // Reset for next audio segment
                 }
-              });
-              setLoading(false);
+              } else if (parsedEvent.type === 'response.audio_transcript.done') {
+                updateMessages(parsedEvent.transcript);
+              }
+            } catch (error) {
+              console.error("Error processing event:", error, "Raw event:", event);
             }
           }
         }
@@ -143,45 +117,71 @@ export default function Home() {
     }
   };
 
+  const updateMessages = (text: string) => {
+    setMessages(prevMessages => {
+      const lastMessage = prevMessages[prevMessages.length - 1];
+      if (lastMessage && lastMessage.type === 'assistant') {
+        const updatedMessages = [...prevMessages];
+        updatedMessages[updatedMessages.length - 1] = { type: "assistant", value: text };
+        return updatedMessages;
+      } else {
+        return [...prevMessages, { type: "assistant", value: text }];
+      }
+    });
+    setLoading(false);
+  };
+
+  const MIN_AUDIO_BUFFER_SIZE = 1000; // Adjust this value as needed
+
   const playNextAudio = async () => {
     if (audioQueue.length === 0 || isPlaying) return;
 
-    console.log("Playing next audio");
-    setIsPlaying(true);
-
+    console.log("Attempting to play next audio");
+    
     if (!audioContextRef.current) {
       audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
     }
 
     const audioContext = audioContextRef.current!;
-    const [nextAudioBase64, ...remainingAudio] = audioQueue;
-    setAudioQueue(remainingAudio);
+    let audioBuffer = '';
+
+    while (audioBuffer.length < MIN_AUDIO_BUFFER_SIZE && audioQueue.length > 0) {
+      audioBuffer += audioQueue.shift() || '';
+    }
+
+    if (audioBuffer.length < MIN_AUDIO_BUFFER_SIZE) {
+      console.log("Not enough audio data, waiting for more...");
+      return;
+    }
+
+    setIsPlaying(true);
 
     try {
-      const float32Array = base64ToFloat32Array(nextAudioBase64);
+      const float32Array = base64ToFloat32Array(audioBuffer);
 
       // Create an AudioBuffer
-      const audioBuffer = audioContext.createBuffer(
+      const buffer = audioContext.createBuffer(
         1, // numberOfChannels
         float32Array.length,
         24000 // sampleRate
       );
-      audioBuffer.copyToChannel(float32Array, 0);
+      buffer.copyToChannel(float32Array, 0);
 
       // Play the AudioBuffer
       const source = audioContext.createBufferSource();
-      source.buffer = audioBuffer;
+      source.buffer = buffer;
       source.connect(audioContext.destination);
       source.start();
 
       source.onended = () => {
         console.log("Audio ended");
         setIsPlaying(false);
-        // We don't call playNextAudio() here anymore
+        playNextAudio(); // Try to play the next audio chunk
       };
     } catch (error) {
       console.error("Error playing audio:", error);
       setIsPlaying(false);
+      playNextAudio(); // Try to play the next audio chunk even if this one failed
     }
   };
 

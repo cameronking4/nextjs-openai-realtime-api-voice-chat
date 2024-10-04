@@ -35,7 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         type: "response.create",
         response: {
           modalities: ["text", "audio"],
-          instructions: "You are my best friend. Be helpful and friendly.",
+          instructions: "You are a helpful assistant. tell me a joke.",
         }
       }));
 
@@ -83,5 +83,3 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     res.status(405).json({ error: 'Method not allowed' });
   }
 }
-
-export const experimental_ppr = true
