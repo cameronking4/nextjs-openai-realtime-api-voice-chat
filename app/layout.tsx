@@ -5,8 +5,8 @@ import { Analytics } from "@vercel/analytics/react"
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Groqet",
-  description: "A Groq API Boilerplate by Aaron Besson",
+  title: "Realtime GPT",
+  description: "A Realtime GPT by Aaron Besson",
 };
 
 export default function RootLayout({

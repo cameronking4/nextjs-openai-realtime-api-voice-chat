@@ -23,8 +23,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     ws.on("open", function open() {
       console.log("Connected to server.");
-
-      // **Add this session.update message to specify audio_encoding**
       ws.send(JSON.stringify({
         type: "session.update",
         session: {
