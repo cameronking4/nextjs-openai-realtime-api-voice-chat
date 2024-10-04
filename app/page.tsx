@@ -95,6 +95,7 @@
                     return [...prevMessages, { type: "assistant", value: accumulatedText }];
                   }
                 });
+                setLoading(false);
               } else if (parsedEvent.type === 'response.audio.delta') {
                 currentAudioChunks.push(parsedEvent.delta);
               } else if (parsedEvent.type === 'response.audio.done') {
@@ -114,6 +115,7 @@
                     return [...prevMessages, { type: "assistant", value: parsedEvent.transcript }];
                   }
                 });
+                setLoading(false);
               }
             }
           }
@@ -250,7 +252,7 @@
 
     return (<div>
       {Header()}
-      <main className="flex flex-col items-center justify-between w-full h-svh font-mono">
+      <main className="flex flex-col items-center justify-between w-full h-svh">
         <div
           ref={windowRef}
           className="flex-1 overflow-auto flex flex-col gap-4 w-full h-svh py-12"
