@@ -37,7 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         type: "response.create",
         response: {
           modalities: ["text", "audio"],
-          instructions: "You are a helpful assistant.",
+          instructions: "You are my best friend. Be helpful and friendly.",
         }
       }));
 

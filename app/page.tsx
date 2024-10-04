@@ -25,7 +25,7 @@
     const [audioQueue, setAudioQueue] = useState<string[]>([]);
     const audioContextRef = useRef<AudioContext | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
-
+    let buffer = '';
     // Function to convert base64 to Float32Array
     const base64ToFloat32Array = (base64: string) => {
       const binaryString = atob(base64);
