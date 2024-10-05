@@ -1,9 +1,12 @@
 'use client';
 import { MicrophoneIcon } from "@heroicons/react/16/solid";
 import { ArrowPathIcon } from "@heroicons/react/20/solid";
-import { CloudArrowDownIcon } from "@heroicons/react/24/solid";
+import { BotIcon, StarIcon, ArrowUp, DownloadIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import Typewriter from "../components/Typewriter";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import Typewriter from "@/components/Typewriter";
+import Link from "next/link";
 
 interface Window { // add webkitSpeechRecognition to window
   webkitSpeechRecognition: any;
@@ -231,7 +234,7 @@ export default function Home() {
   }, []);
 
   const startListening = () => { // start listening to microphone
-    setReply("Hello! I'm Groqet, start speaking to ask me a question.")
+    setReply("Hello!.")
     setIsListening(true);
     if (recognition) {
       recognition.start();
@@ -252,7 +255,7 @@ export default function Home() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'groqet-messages.txt';
+    a.download = 'openai-realtime-conversation.txt';
     a.click();
   };
 
@@ -266,14 +269,25 @@ export default function Home() {
   return (<div>
     {Header()}
     <main className="flex flex-col items-center justify-between w-full h-svh">
+      <div className="mt-24 border shadow-xl p-8 rounded-2xl">
+          {!isListening ?
+          <MicrophoneIcon
+            onClick={startListening}
+            className="h-6 w-6 text-gray-500 hover:text-black cursor-pointer" />
+          :
+          <MicrophoneIcon
+            onClick={stopListening}
+            className="h-6 w-6 text-red-500 animate-pulse cursor-pointer" />
+        }
+      </div>
       <div
         ref={windowRef}
-        className="flex-1 overflow-auto flex flex-col gap-4 w-full h-svh py-12"
+        className="flex-1 overflow-auto flex flex-col gap-4 w-1/2 h-svh py-12 [&::-webkit-scrollbar]:hidden"
       >
         {messages.map((item, index) => item.value !== "" &&
           <div
             onClick={() => handleClick()}
-            key={index} className={`mx-6 shadow border items-start rounded-2xl md:items-center max-w-5xl ${item.type === "user" ? "text-right self-end bg-green-100 ml-24" : "bg-white mr-24"}`}>
+            key={index} className={`mx-6 shadow border items-start rounded-lg md:items-center max-w-5xl ${item.type === "user" ? "text-right self-end bg-black text-white ml-24" : "bg-white mr-24"}`}>
             <Typewriter
               fontSize={14}
               delay={0}
@@ -286,13 +300,13 @@ export default function Home() {
 
       </div>
 
-      <div className="p-2 flex items-center gap-4 w-full bg-gray-100 px-4 border-t border-gray-200">
+      <div className="py-6 mx-36 my-16 w-1/2 flex items-center gap-4 rounded-lg px-4 border border-gray-200">
 
-        <CloudArrowDownIcon
+        <DownloadIcon
           onClick={downloadMessages}
           className="h-6 w-6 text-gray-500 hover:text-black cursor-pointer" />
 
-        <input
+        <Input
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
           onKeyPress={(e) => {
@@ -301,37 +315,45 @@ export default function Home() {
             }
           }}
           className="flex bg-white w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 flex-1"
-          placeholder="Ask me a question"
+          placeholder="Chat with voice or text prompt."
         />
 
-        <button
+        <Button
           disabled={loading}
           onClick={() => sendMessage(prompt)}
           className="rounded-lg bg-black p-2 text-white">
           {loading ? <ArrowPathIcon className="h-6 w-6 animate-spin" aria-hidden="true" />
-            : "Send"}
-        </button>
-
-        {!isListening ?
-          <MicrophoneIcon
-            onClick={startListening}
-            className="h-6 w-6 text-gray-500 hover:text-black cursor-pointer" />
-          :
-          <MicrophoneIcon
-            onClick={stopListening}
-            className="h-6 w-6 text-red-500 animate-pulse cursor-pointer" />
-        }
+            : <ArrowUp className="h-6 w-6 hover:animate-spin" aria-label="send" />}
+        </Button>
       </div>
     </main>
   </div>
   );
 
   function Header() {
-    return <div className="flex fixed top-0 py-1 gap-2 w-full px-2 items-center font-mono">
-      {!reply &&
-        <div className="">
-          <a href="https://x.com/aaronbesson" className="text-xs opacity-50" target="_blank">@aaronbesson</a>
-        </div>}
-    </div>;
-  }
+    return (
+      <div className="flex fixed top-0 py-1 gap-4 w-full px-4 items-center justify-between bg-black shadow-lg border-b">
+        <div className="flex items-center gap-2 text-secondary">
+          {/* Logo */}
+          <div className="flex items-center">
+            <BotIcon className="mr-2"/> Next.js OpenAI Realtime API Chat
+          </div>
+          {/* Navigation link */}
+          <div className="ml-2">
+            <a href="https://x.com/aaronbesson" className="text-xs opacity-50" target="_blank">
+              Voice AI GPT-4o
+            </a>
+          </div>
+        </div>
+        {/* Buttons */}
+        <div className="flex items-center gap-2">
+          <Link href="">
+          <Button className="text-sm border border-gray-300 rounded-lg px-3 py-1 hover:bg-stone-800">
+           <StarIcon className="size-4 mr-2"/> Star on GitHub
+          </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }    
 }
